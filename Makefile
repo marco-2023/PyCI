@@ -70,7 +70,7 @@ OBJECTS := $(patsubst %.cpp,%.o,$(wildcard pyci/src/*.cpp))
 # -------------
 
 .PHONY: all
-all: pyci/_pyci.so.$(PYCI_VERSION) pyci/_pyci.so.$(VERSION_MAJOR) pyci/_pyci.so
+all: pyci/_pyci.so.$(PYCI_VERSION) pyci/_pyci.so.$(VERSION_MAJOR) pyci/_pyci.so pyci/libpyci.a
 
 .PHONY: test
 test:
@@ -78,7 +78,7 @@ test:
 
 .PHONY: clean
 clean:
-	rm -rf pyci/src/*.o pyci/_pyci.so*
+	rm -rf pyci/src/*.o pyci/_pyci.so* pyci/libpyci.a
 
 .PHONY: cleandeps
 cleandeps:
@@ -98,10 +98,14 @@ pyci/_pyci.so.$(PYCI_VERSION): $(OBJECTS)
 	$(CXX) $(CFLAGS) $(DEFS) -shared $(^) -o $(@)
 
 pyci/_pyci.so.$(VERSION_MAJOR): pyci/_pyci.so.$(PYCI_VERSION)
-	ln -sf $(notdir $(<)) $(@)
+	ln -sf $(notdir $<) $@
 
 pyci/_pyci.so: pyci/_pyci.so.$(PYCI_VERSION)
-	ln -sf $(notdir $(<)) $(@)
+	ln -sf $(notdir $<) $@
+
+# Static library
+pyci/libpyci.a: $(OBJECTS)
+	ar rcs $@ $(OBJECTS)
 
 deps/eigen:
 	[ -d $@ ] || git clone https://gitlab.com/libeigen/eigen.git $@
