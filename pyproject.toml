@@ -101,6 +101,13 @@ sdist.exclude = [
 ]
 metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
 
+[tool.cibuildwheel]
+output-dir = "wheelhouse"
+
+[tool.cibuildwheel.linux]
+before-build = "bash ./tools/wheels/cibw_before_build_linux.sh"
+
+
 # Version management configuration
 [tool.setuptools_scm]
 # Enable setuptools-scm for version management
