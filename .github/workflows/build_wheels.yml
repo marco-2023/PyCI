@@ -194,10 +194,10 @@ jobs:
           echo "Contents of dist:"
           ls -l dist/
 
-      - name: Publish distribution to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          verbose: true
+  #     - name: Publish distribution to PyPI
+  #       uses: pypa/gh-action-pypi-publish@release/v1
+  #       with:
+  #         verbose: true
 
       # - name: Upload to PyPI
       #   env:
