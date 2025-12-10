@@ -35,6 +35,7 @@ jobs:
 
       - name: Debug OS
         run: |
+          set -x
           uname -a
           df -h
           env
@@ -110,7 +111,7 @@ jobs:
 
       - name: Upload build logs
         if: failure()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: website-build-logs
           path: |
