@@ -3,9 +3,7 @@ name: deploy-book
 # Only run this when the master branch changes
 on:
   push:
-    branches:
-      - master
-      - website
+    branches: [master, website]
 
   pull_request:
     types: [opened, synchronize, reopened, closed]
@@ -27,44 +25,93 @@ jobs:
       # https://github.com/JamesIves/github-pages-deploy-action/issues/1110
       contents: write
 
+    env:
+      ACTIONS_STEP_DEBUG: true
+      PYTHONUNBUFFERED: 1
+      JUPYTER_BOOK_VERBOSE: 1
+
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
+
+      - name: Debug OS
+        run: |
+          uname -a
+          df -h
+          env
+
       - name: Set up Python 3.10
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: "3.10"
+
+      - name: Debug Python environment
+        run: |
+          python3 -VV
+          pip3 debug
+          pip3 list
+
       - name: Install dependencies and make C++ library
         run: |
-          python3 -m pip install --user numpy scipy pytest pycodestyle pydocstyle
+          set -x
+          python3 -m pip install --upgrade pip
+          python3 -m pip install numpy scipy pytest pycodestyle pydocstyle --verbose
           PYTHON=python3 make
-          python3 -m pip install .
+          python3 -m pip install . --verbose
 
-      - name: Install dependencies
+      - name: Install Jupyter Book dependencies
         run: |
-          python3 -m pip install -r website/requirements.txt
+          set -x
+          python3 -m pip install -r website/requirements.txt --verbose
 
 
-      # Add soft links to the notebooks
-      - name: Add soft links to the notebooks
+      - name: Add soft links to notebooks
         run: |
+          set -x
           cd website
           ln -s ../notebooks ./examples
           ln -s ../doc/source ./api
-          cd ../
+          ls -l
+          cd ..
 
-      # Build the book
+      - name: Validate symlinks
+        run: |
+          set -x
+          cd website
+          ls -l .
+          ls -l examples || true
+          ls -l api || true
+          cd ..
+
       - name: Build the website
         run: |
-          jupyter-book build ./website/
+          set -x
+          jupyter-book build ./website/ --verbose --keep-going
+
+      - name: Verify build succeeded
+        run: |
+          set -x
+          if [ -f website/_build/html/index.html ]; then
+            echo "Jupyter Book build succeeded!"
+          else
+            echo "Build failed: index.html not found"
+            exit 1
+          fi
 
       # Push the book's HTML to github-pages
       # inspired by https://github.com/orgs/community/discussions/26724
       # only push to gh-pages if the master branch has been updated
       - name: GitHub Pages Action
-        # if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
         uses: peaceiris/actions-gh-pages@v3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           publish_dir: ./website/_build/html
           publish_branch: gh-pages
           cname: pyci.qcdevs.org
+
+      - name: Upload build logs
+        if: failure()
+        uses: actions/upload-artifact@v3
+        with:
+          name: website-build-logs
+          path: |
+            website/_build
